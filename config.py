@@ -1,21 +1,13 @@
-import sqlalchemy as sa
+from sqlalchemy import create_engine, text
+from typing import List, Optional
 
-conn_str = (
-    "mssql+pymssql://sa:Pass123%21@mssql2025:1433/master?charset=utf8&tds_version=7.4"
-)
+conn_str = r"mssql+pymssql://sa:Pass123!@mssql2025:1433/BibliotecaDB?charset=utf8&tds_version=7.4"
 
 try:
-    engine = sa.create_engine(conn_str)
+    engine = create_engine(conn_str)
     with engine.connect() as conn:
-        result = conn.execute(sa.text("SELECT @@version")).fetchone()
-        print("Conexión exitosa:", result)
+        result = conn.execute(text("SELECT @@version AS Version")).all()[0]
+        sql_version = str(result).split("\\n")[0].strip().replace("(","", count = 1)
+        print("Conexión exitosa:", sql_version)
 except Exception as e:
     print("Error:", e)
-
-
-from sqlalchemy.orm import sessionmaker
-
-Session = sessionmaker(bind=engine)
-with Session() as session:
-    result = session.execute(sa.text("SELECT * FROM sys.databases")).fetchall()
-    print(result)

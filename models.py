@@ -4,7 +4,10 @@ This estrategy was taken from:
 """
 
 from config import engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import text
+from sqlalchemy.orm import DeclarativeBase, relationship, Mapped
+from typing import List
+import pandas as pd
 
 class Base(DeclarativeBase):
     pass
@@ -13,18 +16,33 @@ Base.metadata.reflect(engine)
 
 class Autor(Base):
     __table__ = Base.metadata.tables["tblAutores"]
+    # Un autor tiene muchos libros
+    libros: Mapped[List["Libro"]] = relationship(back_populates="autor") 
 
 class Categoria(Base):
     __table__ = Base.metadata.tables["tblCategorías"]
+    # Una categoría tiene muchos libros
+    libros: Mapped[List["Libro"]] = relationship(back_populates="categoria") 
 
 class Libro(Base):
     __table__ = Base.metadata.tables["tblLibros"]
-
-class Prestamo(Base):
-    __table__ = Base.metadata.tables["tblPrestamos"]
+    # Un libro tiene un autor y una categoría (relación many-to-one)
+    autor: Mapped["Autor"] = relationship(back_populates="libros")
+    categoria: Mapped["Categoria"] = relationship(back_populates="libros")
+    
+    # Un libro puede tener muchos préstamos a lo largo del tiempo
+    prestamos: Mapped[List["Prestamo"]] = relationship(back_populates="libro")
 
 class Usuario(Base):
     __table__ = Base.metadata.tables["tblUsuarios"]
+    # Un usuario tiene muchos préstamos
+    prestamos: Mapped[List["Prestamo"]] = relationship(back_populates="usuario")
+
+class Prestamo(Base):
+    __table__ = Base.metadata.tables["tblPrestamos"]
+    # Un préstamo pertenece a un usuario y a un libro
+    usuario: Mapped["Usuario"] = relationship(back_populates="prestamos")
+    libro: Mapped["Libro"] = relationship(back_populates="prestamos")
 
 def print_class_metadata(class_name):
     """
@@ -53,6 +71,15 @@ def print_class_metadata(class_name):
 
 # To list tables in DB
 if __name__ == "__main__":
+    
     print(list(Base.metadata.tables.keys()))
 
-    print_class_metadata("Usuario")
+    print_class_metadata("Libro")
+
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT * FROM tblLibros;"))
+        column_names = result.keys()
+        data = result.fetchall()
+        df_libros = pd.DataFrame(data, columns=column_names)
+        print(df_libros)
+

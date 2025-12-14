@@ -7,6 +7,7 @@ let
       ipykernel
       pandas
       flask
+      requests
       sqlalchemy
       pymssql;
   };
